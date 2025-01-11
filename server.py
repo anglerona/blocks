@@ -1,3 +1,6 @@
+import os
+os.environ["SDL_AUDIODRIVER"] = "dummy"  # Disable audio to suppress ALSA warnings
+
 from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
 import pygame as pg
@@ -7,7 +10,10 @@ import io
 import threading
 import time
 from main import VoxelEngine
+import eventlet
+import eventlet.wsgi
 
+# Initialize Flask and SocketIO
 app = Flask(__name__)
 socketio = SocketIO(app)
 
@@ -18,6 +24,7 @@ current_frame = None
 
 
 def run_engine():
+    """Run the Voxel Engine in a loop."""
     global engine, current_frame
     engine = VoxelEngine()
 
@@ -38,7 +45,7 @@ def run_engine():
 
 @app.route('/')
 def index():
-    # Serve the HTML interface
+    """Serve the HTML interface."""
     return render_template('index.html')
 
 
@@ -66,5 +73,5 @@ if __name__ == "__main__":
     # Run the Voxel Engine in a separate thread
     threading.Thread(target=run_engine, daemon=True).start()
 
-    # Start the Flask server
-    socketio.run(app, host="0.0.0.0", port=5000)
+    # Start the Flask server with Eventlet for production
+    eventlet.wsgi.server(eventlet.listen(("0.0.0.0", 5000)), app)
